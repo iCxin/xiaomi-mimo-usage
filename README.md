@@ -83,12 +83,70 @@ Other things worth knowing:
 - **Models are merged by model ID.** The same model reached through two providers
   (e.g. `jiyuanc/deepseek-flash` and `jiyuan/deepseek-flash`) is one model, not two.
   The providers actually seen are listed in the table.
+- **Deleting a conversation does not lose its usage.** The engine's `message` table
+  cascades deletes from `session`, so removing a conversation would take its token
+  history with it — which is why totals used to drift downwards as chats were cleaned
+  up. The dashboard therefore folds usage into a local accumulator
+  (`usage_history.db`) as it runs: a deleted conversation keeps contributing and is
+  marked *conversation deleted · usage retained* in the table. Conversations deleted
+  before the first run cannot be recovered; the footer states when full coverage
+  begins. Delete `usage_history.db` to start over — it rebuilds from whatever the
+  database still holds.
 - **Streaks** count consecutive calendar days with usage. A current streak of `0` means
   nothing has been spent today yet.
 - **Longest chat** is the span between the first and last message in a session, not how
   long the model spent generating.
 
 The **Methodology** button in the page footer repeats all of this in the UI.
+
+## Using it from inside MiMo Desktop
+
+MiMo Desktop is a signed, closed-source app, so there is no way to add a native
+panel to it. Two supported extension points get close, and both work today.
+
+**A skill — open the dashboard from the conversation.**
+Copy `skill/` into your MiMoCode skills directory:
+
+```sh
+# macOS / Linux
+cp -r skill ~/.config/mimocode/skills/mimo-usage
+
+# Windows (PowerShell)
+Copy-Item -Recurse skill "$env:USERPROFILE\.config\mimocode\skills\mimo-usage"
+```
+
+Then ask MiMo to show your usage, or run `/mimo-usage`. The dashboard opens in
+the preview panel beside the conversation.
+
+**An MCP server — let MiMo answer usage questions directly.**
+`mcp_server.py` is a dependency-free MCP server (stdio JSON-RPC, no SDK needed)
+that reads the same database and exposes four tools:
+
+| tool | answers |
+|---|---|
+| `usage_summary` | totals, busiest day, streaks, longest chat |
+| `usage_by_model` | per-model breakdown, merged across providers |
+| `usage_by_session` | which conversations used the most |
+| `usage_timeline` | daily totals |
+
+Register it — this edits the MiMoCode config and keeps a timestamped backup:
+
+```sh
+python3 register_mcp.py --config ~/.config/mimocode/mimocode.jsonc \
+  --server mcp_server.py --python "$(command -v python3)"
+```
+
+On Windows the config lives at `%USERPROFILE%\.config\mimocode\mimocode.jsonc`.
+Restart the engine or start a new conversation, then ask something like "how many
+tokens have I used this week?" and MiMo reads the database to answer.
+
+Undo with `python3 register_mcp.py --config <path> --remove`.
+
+Check the server works on its own before wiring it up:
+
+```sh
+python3 mcp_server.py --selftest
+```
 
 ## Configuration
 
@@ -125,7 +183,11 @@ i18n.js             Chinese and English strings
 styles.css          styling
 data.js             generated — your usage snapshot (gitignored)
 export_tokens.py    reads mimocode.db, writes data.js
+usage_store.py      durable usage accumulator; survives conversation deletion
 watch_tokens.py     keeps data.js current
+mcp_server.py       MCP server exposing usage tools to an agent
+register_mcp.py     adds/removes that server in the MiMoCode config
+skill/              MiMoCode skill: open the dashboard from a conversation
 start.cmd / .sh     launch (Windows / macOS+Linux)
 stop.cmd  / .sh     stop the watcher
 find-python.cmd/.sh shared Python discovery, used by the launchers

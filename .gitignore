@@ -2,6 +2,12 @@
 data.js
 data.js.tmp
 
+# The usage accumulator. Holds your session titles and token history, so it is
+# every bit as private as data.js.
+usage_history.db
+usage_history.db-wal
+usage_history.db-shm
+
 # Watcher runtime state.
 watch.pid
 watch.log

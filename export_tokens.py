@@ -327,7 +327,7 @@ def _blank_bucket():
     }
 
 
-def build_payload(sessions, events, skipped=0):
+def build_payload(sessions, events, skipped=0, coverage=None):
     by_session = defaultdict(_blank_bucket)
     by_model = defaultdict(_blank_bucket)
     providers_by_model = defaultdict(set)
@@ -356,6 +356,9 @@ def build_payload(sessions, events, skipped=0):
             "createdAt": meta.get("createdAt"),
             "durationMs": meta.get("durationMs", 0),
             "archived": meta.get("archived", False),
+            # True when the conversation is gone from the database but its usage
+            # is still counted from the accumulator.
+            "deleted": meta.get("deleted", False),
             "exists": sid in sessions,
             **agg,
         })
@@ -379,6 +382,7 @@ def build_payload(sessions, events, skipped=0):
         "sessions": session_list,
         "models": model_list,
         "skippedMessages": skipped,
+        "coverage": coverage or {},
         "events": events,
     }
 
@@ -406,21 +410,49 @@ def report(payload, out_path):
     print("  peak/day=%d on %s  streaks=%d/%d  longest chat=%.0f min"
           % (s["peakDailyTokens"], s["peakDay"], s["currentStreak"],
              s["longestStreak"], s["longestSessionMs"] / 60000.0))
+    cov = payload.get("coverage") or {}
+    if cov.get("firstSyncAt"):
+        print("  coverage from %s  (%d deleted conversation(s) still counted)"
+              % (cov["firstSyncAt"][:19], cov.get("deletedSessions", 0)))
     if payload.get("skippedMessages"):
         print("  skipped %d unparseable message rows" % payload["skippedMessages"])
 
 
-def run_export(db_path, out_path, quiet=False):
+def run_export(db_path, out_path, quiet=False, use_store=True, store_path=None):
+    """Build the snapshot.
+
+    By default the numbers come from the accumulator in usage_store.py rather
+    than straight from the database, because deleting a conversation cascades
+    away its message rows and would otherwise erase its usage from the totals.
+    Pass use_store=False for a raw database-only view.
+    """
     if not os.path.exists(db_path):
         raise SystemExit("database not found: %s" % db_path)
 
-    con = open_readonly(db_path)
-    try:
-        sessions, events, skipped = collect(con)
-    finally:
-        con.close()
+    coverage = {}
+    if use_store:
+        # Imported here because usage_store imports this module.
+        import usage_store
+        store_path = store_path or usage_store.default_store_path()
+        summary = usage_store.sync(db_path, store_path)
+        sessions, events, meta = usage_store.load(store_path)
+        skipped = summary.get("skipped", 0)
+        coverage = {
+            "store": os.path.basename(store_path),
+            "firstSyncAt": local_iso(summary.get("firstSyncAt")),
+            "deletedSessions": summary.get("deletedSessions", 0),
+            # Usage deleted from the database before the first sync could not be
+            # captured; the dashboard says so rather than implying full history.
+            "since": local_iso(summary.get("firstSyncAt")),
+        }
+    else:
+        con = open_readonly(db_path)
+        try:
+            sessions, events, skipped = collect(con)
+        finally:
+            con.close()
 
-    payload = build_payload(sessions, events, skipped)
+    payload = build_payload(sessions, events, skipped, coverage)
     write_payload(payload, out_path)
     if not quiet:
         report(payload, out_path)
@@ -432,6 +464,12 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", default=None, help="path to mimocode.db (auto-detected if omitted)")
     ap.add_argument("--out", default=default_out(), help="where to write data.js")
+    ap.add_argument("--store", default=None,
+                    help="path to the usage accumulator (default: usage_history.db "
+                         "beside this script)")
+    ap.add_argument("--no-store", action="store_true",
+                    help="read the database directly, ignoring the accumulator. "
+                         "Usage from deleted conversations is missing this way.")
     ap.add_argument("--print-db", action="store_true",
                     help="print the detected database path and exit")
     args = ap.parse_args()
@@ -457,7 +495,7 @@ def main():
               "or set the %s environment variable." % ENV_DB, file=sys.stderr)
         raise SystemExit(1)
 
-    run_export(db, args.out)
+    run_export(db, args.out, use_store=not args.no_store, store_path=args.store)
 
 
 if __name__ == "__main__":

@@ -96,6 +96,7 @@ window.MIMO_I18N = {
     "cell.allTokens": "全部 {n} tokens",
     "cell.providers": "供应商 {list}",
     "cell.archived": "已归档",
+    "cell.deleted": "对话已删除 · 用量已保留",
     "cell.duration": "时长 {v}",
     "cell.noSession": "（已删除的会话）",
 
@@ -124,6 +125,7 @@ window.MIMO_I18N = {
       "<b>峰值 Token 数</b>取单日最大消耗。若全部用量集中在同一天，累计与峰值会相等。",
       "<b>连续天数</b>按有消耗的自然日计算；当前连续天数为 0 表示今天还没有产生用量。",
       "<b>最长聊天时长</b>取单个会话内首条与末条消息的时间跨度，不是模型的生成耗时。",
+      "<b>为什么删了对话统计还准。</b>引擎的 message 表对 session 是 <code>ON DELETE CASCADE</code>——删掉一个对话，它的消息行会一起被删。所以本看板在后台把用量累积到本地一份记录里，删掉的对话其用量仍然计入，表格里会标「对话已删除 · 用量已保留」。<span class=\"warn\">但首次运行之前就已删除的对话无法追回</span>，完整覆盖从页脚标注的时间点开始。",
       "<span class=\"warn\">本页不显示金额。</span>数据库里的 <code>cost</code> 字段由桌面端写入，实测恒为 <code>0</code>，无法据此换算费用。要查实际账单请前往 MiMo 账户用量页面。",
       "<b>自动更新：</b>保持监听脚本在后台运行，本页每 20 秒自动拉取一次最新数据，无需手动刷新。"
     ],
@@ -134,6 +136,8 @@ window.MIMO_I18N = {
     "foot.sessions": "{n} 个会话",
     "foot.models": "{n} 个模型",
     "foot.snapshot": "导出快照 {at}",
+    "foot.coverage": "统计完整覆盖自 {at} 起",
+    "foot.coverageDeleted": "统计完整覆盖自 {at} 起 · 已保留 {n} 个已删除对话的用量",
     "refresh.label": "刷新",
     "auto.checking": "自动更新 · 每 {n} 秒检查",
     "auto.updated": "自动更新 · 已更新 {at}",
@@ -231,6 +235,7 @@ window.MIMO_I18N = {
     "cell.allTokens": "{n} tokens total",
     "cell.providers": "provider {list}",
     "cell.archived": "archived",
+    "cell.deleted": "conversation deleted · usage retained",
     "cell.duration": "{v} long",
     "cell.noSession": "(deleted session)",
 
@@ -259,6 +264,7 @@ window.MIMO_I18N = {
       "<b>Peak tokens</b> is the largest single-day total. If all usage falls on one day, the total and the peak will be equal.",
       "<b>Streaks</b> count consecutive calendar days with usage. A current streak of 0 means nothing has been spent today yet.",
       "<b>Longest chat</b> is the time between the first and last message in a single session, not how long the model spent generating.",
+      "<b>Why totals survive deleting a conversation.</b> The engine's <code>message</code> table cascades deletes from <code>session</code>, so removing a conversation also removes its message rows. This dashboard therefore accumulates usage into a local record as it goes: a deleted conversation keeps contributing and is marked \"conversation deleted · usage retained\" in the table. <span class=\"warn\">Conversations deleted before the first run cannot be recovered</span> — full coverage starts at the timestamp in the footer.",
       "<span class=\"warn\">This page shows no money.</span> The <code>cost</code> field in the database is written by the desktop app and is always <code>0</code> in practice, so no spend figure can be derived from it. For actual billing, see your MiMo account usage page.",
       "<b>Auto-refresh:</b> keep the watcher script running in the background and this page re-reads the data every 20 seconds. No manual refresh needed."
     ],
@@ -269,6 +275,8 @@ window.MIMO_I18N = {
     "foot.sessions": "{n} sessions",
     "foot.models": "{n} models",
     "foot.snapshot": "snapshot {at}",
+    "foot.coverage": "full coverage from {at}",
+    "foot.coverageDeleted": "full coverage from {at} · {n} deleted conversation(s) retained",
     "refresh.label": "Refresh",
     "auto.checking": "Auto-refresh · checking every {n}s",
     "auto.updated": "Auto-refresh · updated {at}",

@@ -1006,6 +1006,7 @@
       if (s.durationMs) bits.push(t("cell.duration", { v: fmtDurationText(s.durationMs) }));
       if (s.directory) bits.push(s.directory);
       if (s.archived) bits.push(t("cell.archived"));
+      if (s.deleted) bits.push(t("cell.deleted"));
       if (bits.length) name.appendChild(el("span", "meta", bits.join("  ·  ")));
       tr.appendChild(name);
 
@@ -1071,6 +1072,23 @@
       t("foot.models", { n: (DATA.models || []).length }),
       t("foot.snapshot", { at: fmtTime(DATA.generatedAt) }),
     ].join("　·　");
+  }
+
+  // Deleting a conversation cascades its message rows away, so the accumulator
+  // is what keeps those totals honest. Say when coverage began rather than
+  // implying the history is complete.
+  function renderCoverage() {
+    var host = document.getElementById("coverage-note");
+    if (!host) return;
+    var cov = DATA.coverage || {};
+    if (!cov.firstSyncAt) {
+      host.textContent = "";
+      return;
+    }
+    var deleted = cov.deletedSessions || 0;
+    host.textContent = deleted
+      ? t("foot.coverageDeleted", { at: fmtTime(cov.firstSyncAt), n: deleted })
+      : t("foot.coverage", { at: fmtTime(cov.firstSyncAt) });
   }
 
   /* ---------- static strings ---------- */
@@ -1370,6 +1388,7 @@
     renderSessions();
     renderModels();
     renderMeta();
+    renderCoverage();
     layoutMasonry();
   }
 

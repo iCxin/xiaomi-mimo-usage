@@ -580,6 +580,8 @@ tbody td.strong { color: var(--ink); font-weight: 500; }
 
 .auto-status { display: block; margin-top: 2px; }
 
+.coverage-note { display: block; margin-top: 2px; color: var(--ink-3); }
+
 .auto-status .live {
   display: inline-block;
   width: 7px;

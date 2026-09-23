@@ -68,10 +68,63 @@ python3 export_tokens.py      # 生成 data.js
   据此换算出的任何费用都是虚构的。要看实际账单请前往 MiMo 账户用量页面。
 - **模型按模型 ID 合并。** 同一个模型经由两个供应商调用（例如 `jiyuanc/deepseek-flash`
   与 `jiyuan/deepseek-flash`）算作一个模型，而不是两个。实际用到的供应商会列在表格里。
+- **删除对话不会丢失用量。** 引擎的 `message` 表对 `session` 是级联删除，删掉一个对话
+  会把它的 token 历史一并销毁——这正是之前总量会随着清理对话而不断偏低的原因。所以看板
+  会在后台把用量累积到本地一份记录里（`usage_history.db`）：已删除的对话仍然计入，并在
+  表格中标注「对话已删除 · 用量已保留」。**首次运行之前就已删除的对话无法追回**，页脚会
+  标注完整覆盖的起始时间。删掉 `usage_history.db` 可以重来——它会按数据库里还剩下的内容重建。
 - **连续天数**按有消耗的自然日计算；当前连续天数为 `0` 表示今天还没有产生用量。
 - **最长聊天时长**是单个会话内首条与末条消息的时间跨度，不是模型的生成耗时。
 
 页面底部的**口径说明**按钮会在界面里重复以上内容。
+
+## 在 MiMo Desktop 里使用
+
+MiMo Desktop 是闭源的签名应用，**没法给它加原生面板**。但它有两个官方扩展点，
+都能达到接近的体验，而且现在就能用。
+
+**技能 —— 在对话里直接打开看板。**
+把 `skill/` 复制到 MiMoCode 的技能目录：
+
+```sh
+# macOS / Linux
+cp -r skill ~/.config/mimocode/skills/mimo-usage
+
+# Windows (PowerShell)
+Copy-Item -Recurse skill "$env:USERPROFILE\.config\mimocode\skills\mimo-usage"
+```
+
+然后在对话里说「看看我的用量」，或直接输入 `/mimo-usage`。
+看板会在对话右侧的预览面板里打开。
+
+**MCP 服务器 —— 让 MiMo 直接回答用量问题。**
+`mcp_server.py` 是一个零依赖的 MCP 服务器（手写 stdio JSON-RPC，不需要 SDK），
+读取同一个数据库，暴露四个工具：
+
+| 工具 | 回答什么 |
+|---|---|
+| `usage_summary` | 总量、峰值日、连续天数、最长聊天 |
+| `usage_by_model` | 各模型明细，跨供应商合并 |
+| `usage_by_session` | 哪些会话最费 token |
+| `usage_timeline` | 每日用量序列 |
+
+注册（会修改 MiMoCode 配置，并自动留一份带时间戳的备份）：
+
+```sh
+python3 register_mcp.py --config ~/.config/mimocode/mimocode.jsonc \
+  --server mcp_server.py --python "$(command -v python3)"
+```
+
+Windows 的配置在 `%USERPROFILE%\.config\mimocode\mimocode.jsonc`。
+重启引擎或新建对话后，就可以问「我这个星期用了多少 token」，MiMo 会读数据库回答。
+
+撤销：`python3 register_mcp.py --config <路径> --remove`。
+
+接线之前可以先单独验证服务器：
+
+```sh
+python3 mcp_server.py --selftest
+```
 
 ## 配置
 
@@ -108,7 +161,11 @@ i18n.js             中英文字符串
 styles.css          样式
 data.js             生成产物 —— 你的用量快照（已 gitignore）
 export_tokens.py    读取 mimocode.db，生成 data.js
+usage_store.py      用量累积库；删除对话后数据仍保留
 watch_tokens.py     让 data.js 保持最新
+mcp_server.py       MCP 服务器，向 Agent 暴露用量查询工具
+register_mcp.py     在 MiMoCode 配置里增删该服务器
+skill/              MiMoCode 技能：在对话里打开看板
 start.cmd / .sh     启动（Windows / macOS+Linux）
 stop.cmd  / .sh     停止监听
 find-python.cmd/.sh 共用的 Python 探测逻辑，供启动脚本调用
