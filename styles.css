@@ -1,0 +1,779 @@
+/* ============================================================
+   MiMo Token 用量看板 — styles
+   Visual direction: light analytics dashboard (the reference the
+   user supplied). White page, soft grey cards at 16px radius,
+   pill segmented controls, one blue accent plus a six-hue
+   categorical ramp for series identity.
+   Layout: a responsive card grid — one column on phones, two on
+   laptops, filling the width on a full-screen monitor.
+   ============================================================ */
+
+:root {
+  --page: #ffffff;
+  --card: #f5f5f5;
+  --card-hi: #ffffff;
+  --ink: #1c1c1e;
+  --ink-2: #6e6e73;
+  --ink-3: #a1a1a6;
+  --line: #e5e5e7;
+  --line-soft: #ededef;
+
+  --accent: #1a73e8;
+  --accent-soft: rgba(26, 115, 232, 0.12);
+
+  /* categorical ramp — series identity, assigned in fixed order */
+  --c1: #1a73e8;
+  --c2: #1a9c4a;
+  --c3: #9b7fd4;
+  --c4: #e5484d;
+  --c5: #f5a524;
+  --c6: #14a08a;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--page); }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 34px 28px 60px;
+}
+
+/* ---------- page header ---------- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.page-head h1 {
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.badge {
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+/* Sits at the far right of the header; shows the language you would switch TO. */
+.lang-btn {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.lang-btn:hover { background: var(--card); color: var(--ink); border-color: #d8d8da; }
+
+/* ---------- responsive card grid ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Waterfall packing: app.js gives every card a row span measured from its own
+   content, using 1px rows so the span can match the height exactly. The visual
+   gap then comes from the card's own bottom margin, and a short card never
+   leaves a hole next to a tall one. */
+.grid.masonry {
+  grid-auto-rows: 1px;
+  row-gap: 0;
+  grid-auto-flow: row dense;
+}
+
+.grid.masonry > .card {
+  align-self: start;
+  margin-bottom: 16px;
+}
+
+/* Two columns as soon as there is room for them. The cards that need width
+   (the year heatmap, the trend chart) span the full grid; the rest pair up. */
+@media (min-width: 1200px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .span-all { grid-column: 1 / -1; }
+}
+
+/* ---------- shared card ---------- */
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px 22px;
+  min-width: 0;
+  /* Cards are container-query roots so their contents can adapt to the card's
+     own width — with a multi-column grid that is no longer the viewport width. */
+  container-type: inline-size;
+}
+
+.card > h2 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card > h2 .sub-note {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+/* ---------- segmented pill control ---------- */
+
+.pills {
+  display: inline-flex;
+  background: #ebebed;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  flex: none;
+}
+
+.pills button {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 15px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.pills button:hover { color: var(--ink); }
+
+.pills button[aria-pressed="true"] {
+  background: var(--card-hi);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ---------- stat row ---------- */
+
+.stats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+}
+
+.stat {
+  text-align: center;
+  padding: 6px 10px;
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+
+.stat:first-child { border-left: 0; }
+
+.stat .value {
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.stat .value .unit {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-2);
+  margin-left: 3px;
+}
+
+.stat .label {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- activity heatmap ---------- */
+
+.heat-scroll { overflow-x: auto; }
+
+/* The grid is sized to the card from JS (min/max width set inline), so here it
+   only has to fill the wrapper and centre itself when the card is wider. */
+.heat-scroll svg {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  height: auto;
+}
+
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 10px;
+}
+
+.heat-legend .swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.heat-legend .swatch + .swatch { margin-left: 1px; }
+
+.heat-label { font-size: 11px; fill: var(--ink-3); }
+
+/* ---------- trend chart ---------- */
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.series-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.series-legend .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+
+.series-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.legend-note { font-size: 12.5px; color: var(--ink-3); }
+
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.axis-text { font-size: 12px; fill: var(--ink-3); }
+
+/* The chart picks its viewBox from the host width; on a narrow card the
+   labels need to be relatively larger to survive the downscale. */
+.chart-narrow .axis-text { font-size: 15px; }
+
+.chart-empty {
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ---------- donut ---------- */
+
+.donut-wrap {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  gap: 26px;
+  align-items: center;
+}
+
+.donut { display: block; width: 100%; height: auto; max-width: 260px; margin: 0 auto; }
+
+.donut-center-value {
+  font-size: 22px;
+  font-weight: 500;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.donut-center-label { font-size: 12px; fill: var(--ink-2); }
+
+.donut-legend { display: flex; flex-direction: column; min-width: 0; }
+
+.donut-legend .row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.donut-legend .row:last-child { border-bottom: 0; }
+
+.donut-legend .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.donut-legend .name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-legend .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.donut-legend .pct {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.donut-legend .amt {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  padding-left: 20px;
+}
+
+/* Stack the donut when its own card is narrow, whatever the viewport is. */
+@container (max-width: 620px) {
+  .donut-wrap { grid-template-columns: 1fr; gap: 16px; }
+  .donut { max-width: 220px; }
+}
+
+/* ---------- composition bar ---------- */
+
+.comp-bar {
+  display: flex;
+  height: 26px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #ebebed;
+}
+
+.comp-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: filter 0.15s;
+}
+
+.comp-seg:hover { filter: brightness(1.08); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.legend .item { display: inline-flex; align-items: center; gap: 8px; }
+
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* ---------- tables ---------- */
+
+.table-scroll { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+thead th {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-2);
+  text-align: right;
+  padding: 0 10px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+thead th:first-child { text-align: left; padding-left: 0; }
+
+tbody td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+tbody td.name {
+  text-align: left;
+  color: var(--ink);
+  padding-left: 0;
+  white-space: normal;
+  min-width: 170px;
+}
+
+tbody td.name .meta {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+
+tbody td.strong { color: var(--ink); font-weight: 500; }
+
+/* Tables shed their least important columns as the card narrows, so a
+   two-column layout never turns into a horizontal scrollbar. The thresholds are
+   measured: the eight-column model table needs ~694px, the seven-column session
+   table ~650px. */
+@container (max-width: 720px) {
+  .col-secondary { display: none; }
+  tbody td.name { min-width: 145px; }
+}
+
+@container (max-width: 620px) {
+  .col-tertiary { display: none; }
+  tbody td.name { min-width: 125px; }
+}
+
+.spark {
+  display: inline-block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.85;
+  vertical-align: middle;
+  margin-right: 9px;
+}
+
+.rank { color: var(--ink-3); margin-right: 6px; }
+
+/* ---------- modal ---------- */
+
+.modal {
+  border: 0;
+  border-radius: 16px;
+  padding: 0;
+  width: min(660px, calc(100vw - 40px));
+  max-height: calc(100vh - 80px);
+  background: var(--card-hi);
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  font-family: var(--sans);
+}
+
+.modal::backdrop { background: rgba(0, 0, 0, 0.34); }
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-head h2 { font-size: 16px; font-weight: 600; margin: 0; }
+
+.modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  flex: none;
+}
+
+.modal-close:hover { background: var(--card); color: var(--ink); }
+.modal-close svg { width: 16px; height: 16px; }
+
+.modal-body {
+  padding: 18px 22px 22px;
+  overflow-y: auto;
+  max-height: calc(100vh - 190px);
+}
+
+/* ---------- notes ---------- */
+
+.notes { font-size: 13px; color: var(--ink-2); line-height: 1.8; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li { margin-bottom: 10px; }
+.notes li:last-child { margin-bottom: 0; }
+.notes b { color: var(--ink); }
+.notes code {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  background: var(--card);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #b4441f;
+}
+.notes .warn { color: #b4441f; }
+
+/* ---------- footer + actions ---------- */
+
+.foot-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.foot-note {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.7;
+  min-width: 0;
+}
+
+.auto-status { display: block; margin-top: 2px; }
+
+.auto-status .live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34c759;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.auto-status.pulse .live { animation: livepulse 1.4s ease-out; }
+
+@keyframes livepulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55); }
+  100% { box-shadow: 0 0 0 9px rgba(52, 199, 89, 0); }
+}
+
+.foot-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+
+.ghost-btn,
+.refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  border-radius: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.ghost-btn {
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.ghost-btn:hover { background: var(--card); color: var(--ink); }
+
+.refresh {
+  color: var(--ink);
+  background: var(--card-hi);
+  border: 1px solid var(--line);
+}
+
+.refresh:hover { background: #fafafa; border-color: #d8d8da; }
+.refresh:disabled { color: var(--ink-3); cursor: default; }
+.refresh svg { width: 15px; height: 15px; }
+.refresh.spinning svg { animation: spin 0.9s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #1c1c1e;
+  color: #fff;
+  font-size: 13px;
+  border-radius: 10px;
+  padding: 10px 18px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 50;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+.toast.show { opacity: 1; }
+
+/* ---------- hover tooltip ---------- */
+
+.tip {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  background: var(--card-hi);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  padding: 10px 13px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  max-width: 340px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.tip.show { opacity: 1; }
+
+.tip .tip-head {
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.tip .tip-head .tip-dim {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.tip .tip-line {
+  color: var(--ink-2);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.tip .tip-rows { margin-top: 7px; }
+
+.tip .tip-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.tip .tip-row .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.tip .tip-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+.tip .tip-row .val {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.tip .tip-kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 16px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.tip .tip-kv dt { color: var(--ink-3); white-space: nowrap; }
+
+.tip .tip-kv dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.tip .tip-kv dd.em { color: var(--ink); font-weight: 500; }
+
+/* hover affordances on the charts */
+.heat-cell { transition: opacity 0.1s; }
+.heat-cell:hover { opacity: 0.72; }
+
+.trend-hover-line { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.trend-hover-dot { stroke: #fff; stroke-width: 1.5; }
+
+tbody tr.row-hoverable:hover td { background: rgba(0, 0, 0, 0.028); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 640px) {
+  .wrap { padding: 22px 14px 44px; }
+  .page-head h1 { font-size: 23px; }
+  .card { padding: 16px 15px; border-radius: 14px; }
+  .stat .value { font-size: 19px; }
+  .stat .value .unit { font-size: 13px; }
+  .stat .label { font-size: 11.5px; }
+  tbody td.name { min-width: 110px; }
+  .foot-actions { width: 100%; }
+  .ghost-btn, .refresh { flex: 1; justify-content: center; }
+  .card > h2 { margin-bottom: 14px; }
+}
+
+@media (max-width: 430px) {
+  /* Five stats cannot share a row on a phone; wrap to a 2-up grid. */
+  .stats {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 0;
+  }
+  .stat { border-left: 0; }
+  .stat:nth-child(even) { border-left: 1px solid var(--line); }
+  .stat:nth-child(5) { grid-column: 1 / -1; }
+}

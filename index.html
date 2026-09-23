@@ -1,0 +1,163 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage · MiMo Token</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<p data-aigc-mark="1" style="margin:0 0 8px;font-size:10px;line-height:1.3;color:#6b6560;font-weight:400;">AI生成</p>
+
+
+<div class="wrap" id="app">
+
+  <div class="page-head">
+    <h1 data-i18n="app.title">使用统计</h1>
+    <span class="badge" data-i18n="app.badge">应用用量</span>
+    <button class="lang-btn" id="lang-toggle" type="button" title="Language">EN</button>
+  </div>
+
+  <div class="grid">
+
+    <section class="card span-all">
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="card span-all">
+      <h2>
+        <span data-i18n="heat.title">Token 活动</span>
+        <span class="pills" id="heat-toggle">
+          <button type="button" data-mode="daily" aria-pressed="true" data-i18n="heat.daily">每日</button>
+          <button type="button" data-mode="weekly" aria-pressed="false" data-i18n="heat.weekly">每周</button>
+          <button type="button" data-mode="cumulative" aria-pressed="false" data-i18n="heat.cumulative">累计</button>
+        </span>
+      </h2>
+      <div class="heat-scroll"><div id="heatmap"></div></div>
+      <div class="heat-legend">
+        <span data-i18n="heat.less">少</span>
+        <span class="swatch" data-lv="0"></span>
+        <span class="swatch" data-lv="1"></span>
+        <span class="swatch" data-lv="2"></span>
+        <span class="swatch" data-lv="3"></span>
+        <span class="swatch" data-lv="4"></span>
+        <span data-i18n="heat.more">多</span>
+      </div>
+    </section>
+
+    <section class="card span-all">
+      <h2>
+        <span data-i18n="trend.title">Token 趋势图</span>
+        <span class="pills" id="range-toggle">
+          <button type="button" data-range="7" aria-pressed="true" data-i18n="trend.range7">近 7 日</button>
+          <button type="button" data-range="30" aria-pressed="false" data-i18n="trend.range30">近 30 日</button>
+          <button type="button" data-range="all" aria-pressed="false" data-i18n="trend.rangeAll">全部</button>
+        </span>
+      </h2>
+      <div class="legend-row">
+        <div class="series-legend" id="trend-legend"></div>
+        <span class="legend-note" id="trend-note"></span>
+      </div>
+      <div class="chart" id="trend-chart"></div>
+    </section>
+
+    <section class="card card-donut">
+      <h2 data-i18n="donut.title">模型用量</h2>
+      <div class="donut-wrap">
+        <div id="donut"></div>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="comp.title">Token 构成</span> <span class="sub-note" id="comp-total"></span></h2>
+      <div class="comp-bar" id="comp-bar"></div>
+      <div class="legend" id="comp-legend"></div>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="table.byModel">按模型</span> <span class="sub-note" data-i18n="table.byModelNote">已合并同名模型</span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="th.model">模型</th>
+              <th data-i18n="th.inOut">输入+输出</th>
+              <th data-i18n="th.input">输入</th>
+              <th data-i18n="th.output">输出</th>
+              <th class="col-tertiary" data-i18n="th.reasoning">推理</th>
+              <th class="col-secondary" data-i18n="th.cacheRead">缓存读取</th>
+              <th data-i18n="th.requests">请求</th>
+              <th class="col-secondary" data-i18n="th.cacheHit">缓存命中</th>
+            </tr>
+          </thead>
+          <tbody id="model-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card span-all">
+      <h2><span data-i18n="table.bySession">按会话</span> <span class="sub-note" data-i18n="table.bySessionNote">计费量为输入 + 输出 + 缓存写入</span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="th.session">会话</th>
+              <th data-i18n="th.billed">计费量</th>
+              <th data-i18n="th.input">输入</th>
+              <th data-i18n="th.output">输出</th>
+              <th class="col-tertiary" data-i18n="th.reasoning">推理</th>
+              <th class="col-secondary" data-i18n="th.cacheRead">缓存读取</th>
+              <th data-i18n="th.requests">请求</th>
+            </tr>
+          </thead>
+          <tbody id="session-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="foot-bar">
+    <div class="foot-note">
+      <span id="foot-note"></span>
+      <span class="auto-status" id="auto-status"></span>
+    </div>
+    <div class="foot-actions">
+      <button class="ghost-btn" id="open-notes" type="button" data-i18n="notes.open">口径说明</button>
+      <button class="refresh" id="refresh" type="button">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 8a6 6 0 1 1-1.8-4.3"></path>
+          <path d="M14 2v3.5h-3.5"></path>
+        </svg>
+        <span data-i18n="refresh.label">刷新</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<dialog id="notes-dialog" class="modal" aria-labelledby="notes-title">
+  <div class="modal-head">
+    <h2 id="notes-title" data-i18n="notes.title">口径说明</h2>
+    <button class="modal-close" id="close-notes" type="button" aria-label="Close">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" aria-hidden="true">
+        <path d="M4 4l8 8M12 4l-8 8"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="modal-body notes">
+    <ul id="notes-list"></ul>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="data.js" id="data-script"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
