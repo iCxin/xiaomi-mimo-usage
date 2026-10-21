@@ -1,251 +1,120 @@
-# MiMo Token Usage Dashboard
+<div align="right"><sub><code>iCxin / xiaomi-mimo-usage</code></sub></div>
 
-**English** · [中文](README.zh-CN.md)
+# MiMo Token Usage
 
-A local dashboard for the token usage that MiMo Desktop never shows you.
+> 读 MiMo Desktop 自己的 SQLite 数据库，把用量画成一个完全离线的本地看板。
+> Local dashboard for MiMo Desktop token usage — reads the engine's SQLite database, no network at runtime.
 
-MiMo Desktop keeps no history of what you have spent — there is only a context-window
-ring beside the composer. The numbers *are* on your machine though, in the engine's
-SQLite database. This reads that database and renders a dashboard from it, entirely
-offline.
+| | |
+|:--|:--|
+| **状态** | 活跃维护 |
+| **栈** | `Python` · `HTML` / `CSS` / `JavaScript`（无构建） |
+| **平台** | Windows / macOS / Linux |
+| **许可** | MIT |
 
-<img src="docs/screenshot-en.png" width="880" alt="The dashboard, showing totals, an activity heatmap, a per-model trend chart, a model donut and detail tables">
+---
 
-## What you get
+## 01 · 这是什么
 
-- **Overview row** — total tokens, peak day, longest chat, current and longest streak.
-- **Activity calendar** — a year of usage as a heatmap, switchable between daily,
-  weekly and cumulative views.
-- **Trend chart** — one smooth series per model, over the last 7 / 30 days or all time.
-- **Model breakdown** — a donut plus a table, with same-named models merged across
-  providers.
-- **Detail tables** — per session and per model, with hover tooltips giving the full
-  figures behind every row and cell.
-- **Auto-refresh** — once the watcher is running, the page re-reads the data every
-  20 seconds. No manual refresh.
-- **Bilingual** — Chinese and English, picked from your browser language and switchable
-  from the header.
+MiMo Desktop 不保存花过多少 token 的历史，输入框旁边只有一个上下文环。数字其实在本机——引擎的 SQLite 数据库里。这个项目读那个库，把它渲染成看板，全程离线，页面不发任何网络请求，数据不离开本机。
 
-Everything runs locally. The page makes no network requests, and nothing leaves your
-machine.
+## 02 · 特性
 
-## Requirements
+- **概览行**：总 token、峰值日、最长对话、当前与最长连续天数。
+- **活动日历**：一年用量的热力图，可按日、按周、按累计切换。
+- **趋势图**：每个模型一条曲线，覆盖最近 7 天 / 30 天或全部时间。
+- **模型构成与明细**：环形图加表格，同名模型跨提供商合并；另有按会话、按模型两张明细表，悬停可看每一行的完整数字。
+- **自动刷新**：watcher 运行后页面每 20 秒重读一次数据。
+- **双语**：中文与英文，按浏览器语言选择，可在页头切换。
 
-- MiMo Desktop, run at least once (so a database exists).
-- Python 3.8+ **with the `sqlite3` module** — the standard library build has it. If you
-  have no Python of your own, the launcher will find the runtime MiMo Desktop bundles;
-  you normally do not need to install anything.
+## 03 · 开始使用
 
-No third-party packages. Nothing to `pip install`.
+要求：MiMo Desktop 至少运行过一次（这样才有数据库）；Python 3.8+ 且带 `sqlite3` 模块（标准库自带）。没有自己的 Python 时，启动脚本会去找 MiMo Desktop 捆绑的运行时。不需要 `pip install` 任何东西。
 
-## Quick start
-
-**Windows** — double-click `start.cmd`.
-
-**macOS / Linux**
+Windows 双击 `start.cmd`；macOS / Linux：
 
 ```sh
 ./start.sh
 ```
 
-Either one refreshes the data, starts a background watcher, and opens the dashboard in
-your browser. To stop the watcher, run `stop.cmd` / `./stop.sh` (or close its window on
-Windows if you started it that way).
+两者都会刷新数据、启动后台 watcher 并在浏览器打开看板。停止用 `stop.cmd` / `./stop.sh`。不想留后台进程时，跑 `python3 export_tokens.py` 生成一次 `data.js`，再自己打开 `index.html`，之后用页面上的 Refresh 按钮刷新。
 
-Prefer no background process? Export once and open the page yourself:
+## 04 · 数字怎么算
 
-```sh
-python3 export_tokens.py      # writes data.js
-```
+页面上有两个 token 总数，它们不可比：
 
-Then open `index.html`. The page will show that snapshot; use the **Refresh** button
-after re-running the export.
-
-## How the numbers are computed
-
-These matter, because two different token totals appear on the page and they are not
-comparable:
-
-| Measure | What it counts | Where it appears |
+| 口径 | 统计内容 | 出现位置 |
 |---|---|---|
-| **All tokens** | input + output + reasoning + cache read + cache write | overview row, donut, trend chart |
-| **Billed** | input + output + cache write | the `Billed` column in both tables |
+| **All tokens** | input + output + reasoning + cache read + cache write | 概览行、环形图、趋势图 |
+| **Billed** | input + output + cache write | 两张表的 `Billed` 列 |
 
-Cache reads are broken out separately because they are usually billed at a heavy
-discount. Folding them into the headline total would hide the real cost structure —
-they are often 90%+ of all traffic.
+Cache read 单独拆出：它通常按大幅折扣计费，往往占总流量的 90% 以上，折进主数字会掩盖真实成本结构。页脚的 Methodology 按钮在界面里重复以下口径。
 
-Other things worth knowing:
+- **不显示金额**。数据库有 `cost` 字段，但 MiMo Desktop 永远写 `0`，由此得出的花费都是假的；真实账单看 MiMo 账户的用量页。
+- **同 ID 的模型合并**。同一个模型经由两个提供商（例如 `jiyuanc/deepseek-flash` 与 `jiyuan/deepseek-flash`）算一个模型，表格里列出实际见到的提供商。
+- **删对话不丢用量**。引擎的 `message` 表随 `session` 级联删除，删掉一次对话会带走它的 token 历史，总量因此会往下漂。看板一边读一边把用量折进本地累积库 `usage_history.db`，被删的对话继续计入，并在表格里标为 conversation deleted · usage retained。首次运行之前就被删的对话无法追回，页脚会注明完整覆盖从哪天开始；删掉 `usage_history.db` 即可重来，它会按数据库现存内容重建。
+- **连续天数**按有使用的连续自然日计，当前连续为 `0` 表示今天还没用过；**最长对话**是会话首尾两条消息的时间跨度，不是模型生成耗时。
 
-- **No money is shown, on purpose.** The database has a `cost` field, but MiMo Desktop
-  writes `0` into it, always. Any spend figure derived from it would be fiction. For
-  actual billing, see your MiMo account usage page.
-- **Models are merged by model ID.** The same model reached through two providers
-  (e.g. `jiyuanc/deepseek-flash` and `jiyuan/deepseek-flash`) is one model, not two.
-  The providers actually seen are listed in the table.
-- **Deleting a conversation does not lose its usage.** The engine's `message` table
-  cascades deletes from `session`, so removing a conversation would take its token
-  history with it — which is why totals used to drift downwards as chats were cleaned
-  up. The dashboard therefore folds usage into a local accumulator
-  (`usage_history.db`) as it runs: a deleted conversation keeps contributing and is
-  marked *conversation deleted · usage retained* in the table. Conversations deleted
-  before the first run cannot be recovered; the footer states when full coverage
-  begins. Delete `usage_history.db` to start over — it rebuilds from whatever the
-  database still holds.
-- **Streaks** count consecutive calendar days with usage. A current streak of `0` means
-  nothing has been spent today yet.
-- **Longest chat** is the span between the first and last message in a session, not how
-  long the model spent generating.
+## 05 · 接入 MiMo Desktop
 
-The **Methodology** button in the page footer repeats all of this in the UI.
+MiMo Desktop 是签名闭源的，无法给它加原生面板。两个扩展点可以接近这个效果。
 
-## Using it from inside MiMo Desktop
+**skill：在对话里打开看板。** 把 `skill/` 拷进 MiMoCode 的 skills 目录：
 
-MiMo Desktop is a signed, closed-source app, so there is no way to add a native
-panel to it. Two supported extension points get close, and both work today.
-
-**A skill — open the dashboard from the conversation.**
-Copy `skill/` into your MiMoCode skills directory:
-
-```sh
-# macOS / Linux
-cp -r skill ~/.config/mimocode/skills/mimo-usage
-
-# Windows (PowerShell)
+```powershell
 Copy-Item -Recurse skill "$env:USERPROFILE\.config\mimocode\skills\mimo-usage"
 ```
 
-Then ask MiMo to show your usage, or run `/mimo-usage`. The dashboard opens in
-the preview panel beside the conversation.
+macOS / Linux 用 `cp -r skill ~/.config/mimocode/skills/mimo-usage`。之后让 MiMo 显示用量，或执行 `/mimo-usage`，看板会在对话旁的预览面板里打开。
 
-**An MCP server — let MiMo answer usage questions directly.**
-`mcp_server.py` is a dependency-free MCP server (stdio JSON-RPC, no SDK needed)
-that reads the same database and exposes four tools:
+**MCP server：让 MiMo 直接回答用量问题。** `mcp_server.py` 是无依赖的 MCP server（stdio JSON-RPC，不需要 SDK），读同一个数据库，暴露四个工具：`usage_summary`（总量、最忙的一天、连续天数、最长对话）、`usage_by_model`（按模型拆分，跨提供商合并）、`usage_by_session`（哪几次对话用得最多）、`usage_timeline`（每日总量）。
 
-| tool | answers |
-|---|---|
-| `usage_summary` | totals, busiest day, streaks, longest chat |
-| `usage_by_model` | per-model breakdown, merged across providers |
-| `usage_by_session` | which conversations used the most |
-| `usage_timeline` | daily totals |
-
-Register it — this edits the MiMoCode config and keeps a timestamped backup:
+注册会改 MiMoCode 配置并留下带时间戳的备份：
 
 ```sh
-python3 register_mcp.py --config ~/.config/mimocode/mimocode.jsonc \
-  --server mcp_server.py --python "$(command -v python3)"
+python3 register_mcp.py --config ~/.config/mimocode/mimocode.jsonc --server mcp_server.py --python "$(command -v python3)"
 ```
 
-On Windows the config lives at `%USERPROFILE%\.config\mimocode\mimocode.jsonc`.
-Restart the engine or start a new conversation, then ask something like "how many
-tokens have I used this week?" and MiMo reads the database to answer.
+Windows 的配置在 `%USERPROFILE%\.config\mimocode\mimocode.jsonc`。重启引擎或新开一次对话，然后问「这周我用掉多少 token」。撤销用 `python3 register_mcp.py --config <path> --remove`；接线前可先跑 `python3 mcp_server.py --selftest` 单独验证。
 
-Undo with `python3 register_mcp.py --config <path> --remove`.
+## 06 · 配置
 
-Check the server works on its own before wiring it up:
-
-```sh
-python3 mcp_server.py --selftest
-```
-
-## Configuration
-
-The database is auto-detected. It looks in, in order:
-
-1. `$MIMO_DB`, if set
-2. `$XDG_DATA_HOME/mimocode/mimocode.db` (or `~/.local/share/mimocode/mimocode.db`)
-3. `~/Library/Application Support/mimocode/mimocode.db` (macOS)
-4. `%APPDATA%\Xiaomi MiMo\mimocode\mimocode.db` and similar (Windows)
-
-Check what it found, or point it somewhere else:
+数据库自动探测，顺序为：`$MIMO_DB` → `$XDG_DATA_HOME/mimocode/mimocode.db`（或 `~/.local/share/mimocode/mimocode.db`）→ `~/Library/Application Support/mimocode/mimocode.db`（macOS）→ `%APPDATA%\Xiaomi MiMo\mimocode\mimocode.db` 及类似路径（Windows）。用下面两条命令查看它探测到哪个库，或指定别的路径：
 
 ```sh
 python3 export_tokens.py --print-db
 python3 export_tokens.py --db /path/to/mimocode.db
-MIMO_DB=/path/to/mimocode.db ./start.sh
 ```
 
-The watcher takes the same options:
+watcher 接受同样的路径参数，另有：
 
-```sh
-python3 watch_tokens.py --interval 3     # poll faster than the default 3s
-python3 watch_tokens.py --min-gap 30     # export at most every 30s
-python3 watch_tokens.py --status         # is a watcher running?
-python3 watch_tokens.py --stop           # stop it
-```
+| 参数 | 作用 |
+| --- | --- |
+| `--interval` | 轮询间隔（秒） |
+| `--min-gap` | 两次导出之间的最小间隔（秒） |
+| `--status` | 是否有 watcher 在跑 |
+| `--stop` | 停止 watcher |
 
-## Files
+## 07 · 文件
 
-```
-index.html          dashboard entry point
-app.js              rendering: charts, tables, tooltips, layout
-i18n.js             Chinese and English strings
-styles.css          styling
-data.js             generated — your usage snapshot (gitignored)
-export_tokens.py    reads mimocode.db, writes data.js
-usage_store.py      durable usage accumulator; survives conversation deletion
-watch_tokens.py     keeps data.js current
-mcp_server.py       MCP server exposing usage tools to an agent
-register_mcp.py     adds/removes that server in the MiMoCode config
-skill/              MiMoCode skill: open the dashboard from a conversation
-start.cmd / .sh     launch (Windows / macOS+Linux)
-stop.cmd  / .sh     stop the watcher
-find-python.cmd/.sh shared Python discovery, used by the launchers
-make_demo_data.py   builds an invented snapshot, for screenshots and testing
-docs/               README screenshots
-```
+`index.html` 是看板入口，`app.js` 负责渲染，`i18n.js` 存中英文文案，`styles.css` 管样式，`data.js` 是生成的用量快照（已 gitignore）；`export_tokens.py` 读库写快照，`usage_store.py` 是持久累积库，`watch_tokens.py` 保持快照最新，`mcp_server.py` 与 `register_mcp.py` 负责 MCP 接入，`start.*` / `stop.*` / `find-python.*` 是启动与 Python 发现脚本，`make_demo_data.py` 生成虚构快照供截图与测试。想做界面预览又不动真实数据，跑 `python3 make_demo_data.py`，看完再跑一次 `export_tokens.py` 恢复。
 
-To preview the UI without touching your own data:
+## 08 · 常见问题
 
-```sh
-python3 make_demo_data.py     # writes a demo data.js
-# ...look at it, then re-run export_tokens.py to restore your real numbers
-```
+| 现象 | 处理 |
+| --- | --- |
+| `Python 3 was not found.` | 装上 Python 3，或用 `MIMO_PYTHON` 指定解释器 |
+| `Could not find mimocode.db.` | 先运行一次 MiMo Desktop；数据在别处就用 `--db PATH` 或 `MIMO_DB` |
+| 页面没有数据 / 数字是旧的 | `data.js` 还没生成或还是上次导出的快照：跑 `python3 export_tokens.py`，保持 watcher 运行，再按 Refresh |
+| Refresh 说读不到 data.js | `file://` 页面禁止 `fetch`，回退也可能被缓存挡住，用 Ctrl+R / Cmd+R 重载 |
+| 布局变成单列 | 两列要窗口宽 1200px，窄屏下单列更宽敞 |
 
-## Troubleshooting
+## 09 · 兼容与隐私
 
-**"Python 3 was not found."**
-Install Python 3, or point `MIMO_PYTHON` at an interpreter:
-`MIMO_PYTHON=/usr/bin/python3 ./start.sh`.
+在 Windows 上针对 MiMo Desktop `26.922.222056` 构建与测试。数据库结构与消息载荷在多个版本间都变过，因此读取端把每个字段都当可选：未知字段忽略，解析失败的行跳过并在控制台计数，缺表给出明确错误而不是 traceback。看板本身是纯 HTML/CSS/JS，无构建步骤、无依赖，当前版本的 Chromium、Firefox、Safari 都能跑。
 
-**"Could not find mimocode.db."**
-Run MiMo Desktop at least once first. If your data lives somewhere unusual, pass
-`--db PATH` or set `MIMO_DB`.
+数据库通过临时副本读取，运行中的 MiMo Desktop 不会遇到锁或写入。`data.js` 含会话标题与工作目录，因此已 gitignore——分享前先检查。代码以 [MIT](LICENSE) 许可发布。
 
-**The page shows no data.**
-`data.js` has not been generated yet. Run `python3 export_tokens.py`, then press
-**Refresh**.
+---
 
-**Refresh says it cannot read data.js.**
-On a `file://` page the browser blocks `fetch`, and the fallback can fail if the file
-is cached. Reload the page with Ctrl+R / Cmd+R instead.
-
-**Numbers look stale.**
-The page shows the snapshot from the last export. Either keep `watch_tokens.py`
-running, or re-run the export and hit **Refresh**.
-
-**The layout is a single column.**
-Two columns start at a 1200px-wide window. Below that, one full-width column is roomier
-than two cramped ones.
-
-## Compatibility
-
-Built and tested against MiMo Desktop `26.922.222056` on Windows. The database schema
-and the message payload have both changed across MiMo releases, so the reader treats
-every field as optional: unknown fields are ignored, rows that fail to parse are
-skipped (and counted in the console output), and a missing table produces a clear error
-rather than a traceback.
-
-The dashboard itself is plain HTML/CSS/JS with no build step and no dependencies, and
-works in any current Chromium, Firefox or Safari.
-
-## Privacy
-
-Everything stays on your machine. The database is read through a temporary copy, so a
-running MiMo Desktop never sees a lock or a write. `data.js` contains your session
-titles and working directories, which is why it is gitignored — check before sharing
-it.
-
-## License
-
-[MIT](LICENSE)
+<div align="right"><sub>从像素到混凝土 · <a href="https://github.com/iCxin">iCxin</a></sub></div>
